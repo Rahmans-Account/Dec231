@@ -67,7 +67,8 @@
           resultDiv.innerHTML = `<p style="color: red;">Error: ${data.message}</p>`;
         }
       } catch (error) {
-        resultDiv.innerHTML = `<p style="color: red;">Error: Could not connect to the server.</p>`;
+        resultDiv.innerHTML = `<p style="color: red;">Error: Could not connect to the server. Check console for details.</p>`;
+        console.error('Fetch error:', error);
       }
     });
   </script>
