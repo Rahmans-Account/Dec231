@@ -1,65 +1,46 @@
-exports.handler = async (event) => {
-    if (event.httpMethod === 'POST' && event.path === '/api/calculate') {
-        try {
-            const body = JSON.parse(event.body);
-            const { totalClasses, attendancePercentage, endDate } = body;
+<script>
+    const submitBtn = document.getElementById('submit-btn');
+    const resultContainer = document.getElementById('result-container');
+    const resultTotalClasses = document.getElementById('result-total-classes');
+    const resultAttendancePercentage = document.getElementById('result-attendance-percentage');
+    const resultEndDate = document.getElementById('result-end-date');
 
-            if (!totalClasses || !attendancePercentage || !endDate) {
-                return {
-                    statusCode: 400,
-                    body: JSON.stringify({ message: 'All fields are required!' }),
-                };
-            }
+    submitBtn.addEventListener('click', async () => {
+        // Get form inputs
+        const totalClasses = document.getElementById('total-classes').value;
+        const attendancePercentage = document.getElementById('attendance-percentage').value;
+        const endDate = document.getElementById('end-date').value;
 
-            const today = new Date();
-            const semesterEndDate = new Date(endDate);
-
-            if (semesterEndDate <= today) {
-                return {
-                    statusCode: 400,
-                    body: JSON.stringify({ message: 'End date must be in the future!' }),
-                };
-            }
-
-            const remainingDays = Math.ceil((semesterEndDate - today) / (1000 * 3600 * 24));
-            const remainingWeeks = Math.floor(remainingDays / 7);
-
-            const classesAttended = Math.round((attendancePercentage / 100) * totalClasses);
-            const requiredClassesToReach75 = Math.ceil(0.75 * totalClasses) - classesAttended;
-
-            if (requiredClassesToReach75 <= 0) {
-                return {
-                    statusCode: 200,
-                    body: JSON.stringify({
-                        message: 'You already have 75% or more attendance!',
-                        remainingDays,
-                        classesNeededPerDay: 0,
-                    }),
-                };
-            }
-
-            const totalClassDays = remainingWeeks * 5 + (remainingDays % 7 >= 5 ? 5 : remainingDays % 7);
-            const classesNeededPerDay = Math.ceil(requiredClassesToReach75 / totalClassDays);
-
-            return {
-                statusCode: 200,
-                body: JSON.stringify({
-                    remainingDays,
-                    requiredClassesToReach75,
-                    classesNeededPerDay,
-                    message: `You need to attend ${classesNeededPerDay} classes per day to reach 75% attendance.`,
-                }),
-            };
-        } catch (error) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ message: 'Invalid request data!' }),
-            };
+        // Validate inputs
+        if (!totalClasses || !attendancePercentage || !endDate) {
+            alert('Please fill in all the fields.');
+            return;
         }
-    } else {
-        return {
-            statusCode: 404,
-            body: JSON.stringify({ message: 'Route not found!' }),
-        };
-    }
-};
+
+        try {
+            // Send data to the backend
+            const response = await fetch('/.netlify/functions/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    totalClasses: Number(totalClasses),
+                    attendancePercentage: Number(attendancePercentage),
+                    endDate
+                }),
+            });
+
+            // Parse and display results
+            const data = await response.json();
+            if (response.ok) {
+                resultContainer.style.display = 'block';
+                resultTotalClasses.textContent = `Remaining Days: ${data.remainingDays}`;
+                resultAttendancePercentage.textContent = `Classes Needed to Reach 75%: ${data.requiredClassesToReach75}`;
+                resultEndDate.textContent = `Classes Needed Per Day: ${data.classesNeededPerDay}`;
+            } else {
+                alert(data.message || 'An error occurred while calculating.');
+            }
+        } catch (error) {
+            alert('An error occurred: ' + error.message);
+        }
+    });
+</script>
