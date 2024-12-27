@@ -1,153 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Class Calculator</title>
-    <style>
-        /* General Reset */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            background: #f4f7fa;
-            color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 600px;
-            padding: 30px;
-        }
-
-        header {
-            background: #007bff;
-            color: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        header h1 {
-            font-size: 1.8rem;
-        }
-
-        .form-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-weight: bold;
-            font-size: 1rem;
-            margin-bottom: 5px;
-            color: #555;
-        }
-
-        input[type="number"],
-        input[type="date"],
-        button {
-            padding: 12px;
-            font-size: 1rem;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            margin-bottom: 8px;
-            transition: border-color 0.3s ease;
-        }
-
-        input[type="number"]:focus,
-        input[type="date"]:focus,
-        button:focus {
-            outline: none;
-            border-color: #007bff;
-        }
-
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        button:hover {
-            background: #0056b3;
-        }
-
-        .result-container {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-
-        .result-container p {
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        @media screen and (max-width: 768px) {
-            .container {
-                padding: 20px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    form {
+      max-width: 400px;
+      margin: auto;
+    }
+    input, button {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+  </style>
 </head>
-
 <body>
-    <div class="container">
-        <header>
-            <h1>Attendance Management Tool</h1>
-        </header>
+  <h1>Attendance Manager</h1>
+  <form id="attendanceForm">
+    <input type="number" id="totalClasses" placeholder="Total Classes Held" required />
+    <input type="number" id="attendancePercentage" placeholder="Current Attendance Percentage" required />
+    <input type="date" id="endDate" required />
+    <button type="submit">Calculate</button>
+  </form>
+  <div class="result" id="result"></div>
 
-        <div class="form-container">
-            <div class="form-group">
-                <label for="total-classes">Total Classes Held</label>
-                <input type="number" id="total-classes" placeholder="Enter total classes held">
-            </div>
+  <script>
+    const form = document.getElementById('attendanceForm');
+    const resultDiv = document.getElementById('result');
 
-            <div class="form-group">
-                <label for="attendance-percentage">Current Attendance Percentage</label>
-                <input type="number" id="attendance-percentage" placeholder="Enter your attendance percentage">
-            </div>
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
 
-            <div class="form-group">
-                <label for="end-date">Date of End Semester</label>
-                <input type="date" id="end-date">
-            </div>
+      const totalClasses = document.getElementById('totalClasses').value;
+      const attendancePercentage = document.getElementById('attendancePercentage').value;
+      const endDate = document.getElementById('endDate').value;
 
-            <button id="submit-btn">Submit</button>
-        </div>
+      try {
+        const response = await fetch('/.netlify/functions/calculateAttendance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ totalClasses, attendancePercentage, endDate }),
+        });
 
-        <div class="result-container" id="result-container" style="display: none;">
-            <p id="result-total-classes"></p>
-            <p id="result-attendance-percentage"></p>
-            <p id="result-end-date"></p>
-        </div>
-    </div>
+        const data = await response.json();
+        if (response.ok) {
+          resultDiv.innerHTML = `
+            <p>Remaining Days: ${data.remainingDays}</p>
+            <p>Required Classes to Reach 75%: ${data.requiredClassesToReach75}</p>
+            <p>Classes Needed Per Day: ${data.classesNeededPerDay}</p>
+            <p>${data.message}</p>
+          `;
+        } else {
+          resultDiv.innerHTML = `<p style="color: red;">Error: ${data.message}</p>`;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<p style="color: red;">Error: Could not connect to the server.</p>`;
+      }
+    });
+  </script>
 </body>
-
 </html>
